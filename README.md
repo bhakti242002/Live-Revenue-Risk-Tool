@@ -1,60 +1,53 @@
-# Revenue Risk Check
+# 🚀 Revenue Risk Check
 
-**Live at: https://live-revenue-risk-tool-api-orcin.vercel.app/**
+**🔗 Live now: https://live-revenue-risk-tool-api-orcin.vercel.app/**
 
-Type in any real public company's stock ticker and it pulls that company's actual latest financial filings straight from the SEC, right then, and runs them through a model trained on real historical filing data to predict whether the company's revenue is likely to decline next fiscal year.
+Type in any real public company's stock ticker and instantly get a live, AI-powered risk score, pulled straight from the SEC's own filing system in real time. No cached data. No stale lookups. Every single query hits SEC's live API and runs through a trained machine learning model on the spot. ⚡
 
-This isn't a notebook or a one time script. It's a small, real, deployed system. Every time someone types a ticker, it hits SEC's live API, not a cached lookup.
+This isn't a notebook. It isn't a one-off script. It's a fully deployed, end-to-end data product: real-time data ingestion, feature engineering, and live model inference, all wired together and shipped to production. 🎯
 
-## Why I built this
+## 🛠️ What it does
 
-I wanted a data science project that used real data I pulled myself, not a cleaned dataset someone else packaged for a tutorial. So I wrote a script that pulls actual 10-K filing data directly from the SEC's public EDGAR API, revenue, assets, liabilities, and net income, for about 50 public companies going back to 2009. Then I built a model predicting whether a company's revenue would decline the next year, using only that year's financials.
+1. 🔍 You type a real ticker.
+2. 📡 The backend resolves it to the company's SEC filer ID and pulls live revenue, assets, liabilities, and net income straight from data.sec.gov.
+3. ⚙️ It engineers the same features the model was trained on: revenue scale, debt-to-assets, net margin, and year-over-year growth.
+4. 🤖 A trained Random Forest model scores it in real time and returns a live probability of revenue decline.
+5. 📊 You get a 5-year revenue history chart and a plain-language breakdown of whether each factor is running hot, cold, or right in line with typical companies.
 
-I also wanted it to feel like something real, not just a printout of numbers. So instead of stopping at a script, I turned it into a live tool anyone can actually use.
+There's also a **🏆 Leaderboard** tab that fires off live predictions for eight major companies at once and ranks them by risk, so you can see exactly how the market's biggest names stack up, right now.
 
-## What it does
+## 🎯 Why the methodology is the real flex
 
-1. You type a real ticker.
-2. The backend resolves it to the company's SEC filer ID and pulls its live revenue, assets, liabilities, and net income straight from data.sec.gov.
-3. It computes the same features the model was trained on (revenue size, debt to assets, net margin, year over year revenue growth).
-4. The trained model scores it and returns a probability of revenue decline next year.
-5. You also get a five year revenue history chart and a plain explanation of whether each factor is typical, above typical, or below typical compared to the training data.
+The model hits a 0.62 ROC-AUC. Predicting a company's revenue trajectory a year out from four ratios alone is a genuinely hard problem, so this is a real, earned number, not an inflated one.
 
-There's also a Leaderboard tab that pulls live scores for eight well known companies at once and sorts them by risk, so you can see how a handful of major companies stack up right now.
+Here's the number that actually matters: a naive model that always guesses "no decline" looks like it has 78% accuracy, while catching zero real revenue declines. Zero. This model catches 50% of them. That gap is the whole story. 📈
 
-## Why the methodology matters more than the headline number
+The evaluation is also done right: a **time-based train/test split** (trained on 2009 to 2020, tested only on 2021 onward), so the model is judged the same way it would actually be used, predicting forward on data it's never seen, not shuffled randomly to look artificially strong. 🔒
 
-The model's ROC AUC is 0.62. That is honestly modest, and I think that's the right outcome to be upfront about. Predicting a specific company's revenue trajectory a year out from four basic ratios alone is a genuinely hard problem. If it were easy, that edge wouldn't exist, markets would already price it in.
+## 🔥 What drives the prediction
 
-What actually matters here is the comparison. A naive model that always predicts "no decline" would look like it has 78 percent accuracy, while catching exactly zero real revenue declines. This model catches 50 percent of actual declines. That gap between a misleading accuracy number and what the model actually catches is the real point of this project, not the AUC number by itself.
+1. 📈 Year-over-year revenue growth
+2. 💰 Company size (log revenue)
+3. 💵 Net profit margin
+4. ⚖️ Debt-to-assets ratio
 
-I also used a time based train and test split on purpose. The model trained on 2009 through 2020 and was tested only on 2021 and later. Companies repeat across years in this dataset, so a random split would let future years leak into training and make the results look better than they honestly are. A time based split mimics how this would actually be used: trained on history, predicting forward on new filings.
+## 🏗️ Architecture
 
-## What drives the prediction
+- **Frontend** (`index.html`): pure HTML, CSS, and JavaScript, zero frameworks, zero bloat.
+- **Backend** (`api/predict.py`): a live Python serverless function on Vercel. Every request resolves the ticker, pulls fresh SEC data, builds the feature set, and runs real-time inference.
+- **Model** (`api/model_bundle.joblib`): a Random Forest classifier trained on 505 real company-years (2009 to 2025, 48 companies), shipped with real percentile benchmarks so every result comes with instant context.
 
-In order of importance:
-1. Year over year revenue growth
-2. Company size (log revenue)
-3. Net profit margin
-4. Debt to assets ratio
+No API key required anywhere. 🔓 SEC's API is fully open, it just needs a descriptive User-Agent, which is hardcoded server-side.
 
-## Architecture
+## 📚 Data source
 
-- **Frontend** (`index.html`): plain HTML, CSS, and JavaScript. No framework. Handles the ticker lookup, the leaderboard, and rendering results.
-- **Backend** (`api/predict.py`): a Python serverless function on Vercel. On every request it resolves the ticker's CIK, pulls live data from SEC, builds the feature row, and runs the trained model.
-- **Model** (`api/model_bundle.joblib`): a Random Forest classifier trained on 505 real company years of filing data (2009 to 2025, 48 companies), saved with the real percentile distributions used to flag whether a company's numbers are typical or not.
+100% real. Every number comes straight from the SEC's public EDGAR API, sourced from actual 10-K filings. Ticker-to-CIK mapping comes straight from SEC's own published data too.
 
-No API key is needed anywhere. SEC's API is fully open. It only requires a descriptive User Agent identifying who is making the request, which is not a secret and is hardcoded in the backend.
+## ⚠️ Honest limitations
 
-## Data source
+- 48 companies is a small, non-random sample of large, well-known public companies, not the whole market, so results likely wouldn't generalize to smaller companies without revalidating.
+- Some companies report financials under different XBRL tags across years, creating real gaps, handled with missingness indicators rather than hidden or faked.
+- The class balance shifted between training years and test years (33% revenue declines in training vs. 22% in test), reflecting real differing economic conditions, not a modeling artifact.
+- This is a portfolio project, not investment advice. Nothing here should inform an actual financial decision. 🚫💸
 
-All financial data comes from the SEC's public EDGAR API (data.sec.gov), pulled directly from real 10-K filings. Company ticker to CIK mapping also comes straight from SEC's own published list.
-
-## Honest limitations
-
-- 48 companies is a small, non random sample. These are large, well known public companies, not a representative slice of the market, and results likely wouldn't generalize to smaller companies without revalidating.
-- Some companies report financials under different XBRL tags across years, which creates real gaps in the data. Those gaps are handled with missingness indicators rather than hidden or faked.
-- The class balance shifted between the training years and the test years (33 percent revenue declines in training years versus 22 percent in test years), which reflects real differing economic conditions between the two periods, not a modeling artifact, but it's worth knowing about.
-- This is a portfolio project, not investment advice. Nothing here should inform an actual financial decision.
-
-## Running it locally
+## 💻 Running it locally
