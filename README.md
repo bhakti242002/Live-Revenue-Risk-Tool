@@ -1,4 +1,4 @@
-# 🚀 Revenue Risk Check
+# Revenue Risk Check
 
 **🔗 Live now: https://live-revenue-risk-tool-api-orcin.vercel.app/**
 
@@ -50,4 +50,19 @@ No API key required anywhere. 🔓 SEC's API is fully open, it just needs a desc
 - The class balance shifted between training years and test years (33% revenue declines in training vs. 22% in test), reflecting real differing economic conditions, not a modeling artifact.
 - This is a portfolio project, not investment advice. Nothing here should inform an actual financial decision. 🚫💸
 
-## 💻 Running it locally
+## Running it locally
+pip install pandas scikit-learn joblib requests
+python pull_sec_data.py
+python model.py
+
+
+To run the live app itself, you'll need to deploy it (Vercel or similar), since the frontend calls a serverless backend rather than running everything in one script.
+
+## 📁 Files
+
+- `index.html`: the live tool's frontend
+- `api/predict.py`: the serverless backend pulling live SEC data and running the model
+- `api/model_bundle.joblib`: the trained model, with training medians and percentile context baked in
+- `api/requirements.txt`: backend dependencies
+- `pull_sec_data.py`: the original script used to pull the training dataset
+- `model.py`: training and evaluation script, including the time-based split and metrics above
