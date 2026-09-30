@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Live Revenue Risk Check — real SEC filings</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Live Revenue Risk Check : real SEC filings</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,88 +11,144 @@
 
 <style>
   :root{
-    --bg: #0B0D10;
-    --surface: #14171B;
-    --ink: #EDEFF2;
-    --muted: #8A9099;
-    --line: #232830;
-    --accent: #3B82F6;
-    --risk-high: #E1523D;
-    --risk-high-bg: #2A1512;
-    --risk-low: #2FA86A;
-    --risk-low-bg: #10221A;
+    --bg: #0A0C0F;
+    --bg-grid: #0D1014;
+    --surface: #131720;
+    --surface-2: #1A1F2A;
+    --ink: #F1F3F6;
+    --muted: #8891A0;
+    --muted-dim: #565E6D;
+    --line: #232935;
+    --accent: #4C8DFF;
+    --accent-dim: #16233D;
+    --risk-high: #FF5C4D;
+    --risk-high-bg: #24120F;
+    --risk-low: #33C97D;
+    --risk-low-bg: #0F2118;
   }
   *{ box-sizing: border-box; }
+  html{ scroll-behavior: smooth; }
   body{
-    margin:0; background: var(--bg); color: var(--ink);
+    margin:0;
+    background:
+      linear-gradient(var(--bg-grid) 1px, transparent 1px) 0 0 / 100% 32px,
+      linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px) 0 0 / 32px 100%,
+      var(--bg);
+    color: var(--ink);
     font-family: 'Inter', -apple-system, sans-serif; -webkit-font-smoothing: antialiased;
     min-height: 100vh; display:flex; justify-content:center;
-    padding: 40px 16px 60px;
+    padding: max(40px, env(safe-area-inset-top)) 16px max(60px, env(safe-area-inset-bottom));
   }
-  .app{ width:100%; max-width: 480px; }
+  .app{ width:100%; max-width: 500px; }
 
-  .kicker{ font-family:'IBM Plex Mono', monospace; font-size: 12px; letter-spacing:.08em; text-transform:uppercase; color: var(--accent); margin-bottom: 10px; }
-  h1{ font-size: 26px; font-weight: 800; margin: 0 0 8px; line-height:1.2; }
-  .sub{ color: var(--muted); font-size: 14.5px; line-height:1.5; margin: 0 0 28px; max-width: 44ch; }
+  .kicker{
+    display:flex; align-items:center; gap:8px;
+    font-family:'IBM Plex Mono', monospace; font-size: 11.5px; letter-spacing:.1em; text-transform:uppercase;
+    color: var(--accent); margin-bottom: 14px;
+  }
+  .live-dot{ width:6px; height:6px; border-radius:50%; background: var(--risk-low); animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:.4;} }
+  @media (prefers-reduced-motion: reduce){ .live-dot{ animation:none; } }
 
-  .input-row{ display:flex; gap: 10px; margin-bottom: 8px; }
+  h1{ font-size: 30px; font-weight: 800; margin: 0 0 10px; line-height:1.15; letter-spacing:-0.01em; }
+  .sub{ color: var(--muted); font-size: 14.5px; line-height:1.55; margin: 0 0 24px; max-width: 46ch; }
+
+  .input-row{ display:flex; gap: 10px; margin-bottom: 14px; }
   input{
-    flex:1; padding: 14px 16px; border-radius: 10px; border: 1.5px solid var(--line);
+    flex:1; padding: 15px 16px; border-radius: 12px; border: 1.5px solid var(--line);
     background: var(--surface); color: var(--ink); font-family:'IBM Plex Mono', monospace;
-    font-size: 16px; letter-spacing: .04em; text-transform: uppercase;
+    font-size: 16px; letter-spacing: .05em; text-transform: uppercase;
+    transition: border-color .15s;
   }
-  input::placeholder{ color: var(--muted); text-transform:none; letter-spacing:0; }
-  input:focus, button:focus-visible{ outline: 2px solid var(--accent); outline-offset: 2px; }
+  input::placeholder{ color: var(--muted-dim); text-transform:none; letter-spacing:0; }
+  input:focus{ outline:none; border-color: var(--accent); }
 
-  button{
-    padding: 14px 22px; border-radius: 10px; border: none; background: var(--accent);
+  button.primary{
+    padding: 15px 24px; border-radius: 12px; border: none; background: var(--accent);
     color: #fff; font-weight: 700; font-size: 14.5px; cursor:pointer;
-    transition: opacity .15s;
+    transition: opacity .15s, transform .1s; white-space:nowrap;
   }
-  button:hover{ opacity: .9; }
-  button:disabled{ opacity: .5; cursor: not-allowed; }
+  button.primary:hover{ opacity: .9; }
+  button.primary:active{ transform: scale(0.98); }
+  button.primary:disabled{ opacity: .45; cursor: not-allowed; }
+  button:focus-visible{ outline: 2px solid var(--accent); outline-offset: 2px; }
 
-  .hint{ font-size: 12.5px; color: var(--muted); margin: 0 0 32px; }
-  .hint code{ background: var(--surface); padding: 2px 6px; border-radius:4px; font-family:'IBM Plex Mono', monospace; }
+  .chips{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom: 28px; }
+  .chip{
+    padding: 7px 14px; border-radius: 20px; border: 1px solid var(--line);
+    background: var(--surface); color: var(--muted); font-family:'IBM Plex Mono', monospace;
+    font-size: 12.5px; cursor:pointer; transition: .15s;
+  }
+  .chip:hover{ border-color: var(--accent); color: var(--ink); }
+  .chip.recent::before{ content: '↺ '; color: var(--muted-dim); }
 
   .error-box{
-    padding: 14px 16px; border-radius: 10px; background: rgba(225,82,61,0.12);
+    padding: 14px 16px; border-radius: 12px; background: rgba(255,92,77,0.1);
     color: var(--risk-high); font-size: 13.5px; display:none; margin-bottom: 20px;
+    border: 1px solid rgba(255,92,77,0.25);
   }
 
-  .loading{ display:none; align-items:center; gap:10px; color: var(--muted); font-size: 14px; margin-bottom:20px; }
+  .loading{ display:none; align-items:center; gap:10px; color: var(--muted); font-size: 14px; margin-bottom:24px; min-height: 20px; }
+  .loading.show{ display:flex; }
   .spinner{
-    width:16px; height:16px; border: 2px solid var(--line); border-top-color: var(--accent);
-    border-radius:50%; animation: spin .7s linear infinite;
+    width:15px; height:15px; border: 2px solid var(--line); border-top-color: var(--accent);
+    border-radius:50%; animation: spin .7s linear infinite; flex-shrink:0;
   }
   @keyframes spin{ to{ transform: rotate(360deg); } }
   @media (prefers-reduced-motion: reduce){ .spinner{ animation: spin 1.4s linear infinite; } }
 
   .result{ display:none; }
-  .result.show{ display:block; animation: fade .3s ease; }
-  @keyframes fade{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+  .result.show{ display:block; animation: fadeUp .35s ease; }
+  @keyframes fadeUp{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
 
-  .risk-card{
-    border-radius: 14px; padding: 24px; margin-bottom: 20px; border: 1.5px solid var(--line);
-  }
-  .risk-card.high{ background: var(--risk-high-bg); border-color: rgba(225,82,61,0.4); }
-  .risk-card.low{ background: var(--risk-low-bg); border-color: rgba(47,168,106,0.4); }
+  .company-row{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:14px; }
+  .company-name{ font-size: 16px; font-weight:700; }
+  .company-ticker{ font-family:'IBM Plex Mono', monospace; font-size:13px; color: var(--muted); }
 
-  .risk-label{ font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:.08em; text-transform:uppercase; margin-bottom:6px; }
+  .risk-card{ border-radius: 16px; padding: 26px; margin-bottom: 20px; border: 1.5px solid var(--line); position:relative; overflow:hidden; }
+  .risk-card.high{ background: var(--risk-high-bg); border-color: rgba(255,92,77,0.35); }
+  .risk-card.low{ background: var(--risk-low-bg); border-color: rgba(51,201,125,0.35); }
+
+  .risk-label{ font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:.1em; text-transform:uppercase; margin-bottom:8px; display:flex; align-items:center; gap:8px; }
   .risk-label.high{ color: var(--risk-high); }
   .risk-label.low{ color: var(--risk-low); }
-  .risk-pct{ font-size: 40px; font-weight: 800; line-height:1; margin-bottom:4px; }
-  .risk-desc{ color: var(--muted); font-size: 13.5px; }
+  .risk-pct{ font-size: 46px; font-weight: 800; line-height:1; margin-bottom:6px; letter-spacing:-0.02em; }
+  .risk-desc{ color: var(--muted); font-size: 13.5px; max-width: 34ch; }
 
-  .financials{ border-top: 1px solid var(--line); padding-top:16px; margin-top:16px; }
-  .fin-row{
-    display:flex; justify-content:space-between; padding: 6px 0;
-    font-family:'IBM Plex Mono', monospace; font-size: 13px;
+  .sparkline-wrap{ margin: 20px 0 4px; }
+  .sparkline-label{ font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color: var(--muted-dim); margin-bottom:8px; }
+  svg.sparkline{ width:100%; height:56px; display:block; }
+
+  .factors{ margin-top: 20px; }
+  .factors-label{ font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color: var(--muted-dim); margin-bottom:10px; }
+  .factor-row{
+    display:flex; justify-content:space-between; align-items:center;
+    padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.06);
+    font-size: 13.5px;
   }
+  .factor-row:last-child{ border-bottom:none; }
+  .factor-name{ color: var(--ink); }
+  .factor-value-group{ display:flex; align-items:center; gap:8px; font-family:'IBM Plex Mono', monospace; }
+  .flag{ font-size: 10.5px; padding: 2px 8px; border-radius: 20px; font-weight:600; letter-spacing:.02em; }
+  .flag.below_typical{ background: rgba(255,92,77,0.15); color: var(--risk-high); }
+  .flag.above_typical{ background: rgba(51,201,125,0.15); color: var(--risk-low); }
+  .flag.typical{ background: rgba(136,145,160,0.15); color: var(--muted); }
+  .flag.unknown{ background: rgba(136,145,160,0.1); color: var(--muted-dim); }
+
+  .financials{ border-top: 1px solid var(--line); padding-top:16px; margin-top:20px; }
+  .fin-row{ display:flex; justify-content:space-between; padding: 6px 0; font-family:'IBM Plex Mono', monospace; font-size: 13px; }
   .fin-key{ color: var(--muted); }
 
+  .actions{ display:flex; gap:10px; margin-top: 16px; }
+  button.ghost{
+    flex:1; padding: 10px; border-radius: 10px; border: 1px solid var(--line);
+    background: transparent; color: var(--muted); font-size: 12.5px; cursor:pointer;
+    font-family:'IBM Plex Mono', monospace; transition: .15s;
+  }
+  button.ghost:hover{ border-color: var(--accent); color: var(--ink); }
+
   .disclaimer{
-    font-size: 12px; color: var(--muted); line-height:1.6; margin-top: 32px;
+    font-size: 12px; color: var(--muted-dim); line-height:1.6; margin-top: 36px;
     border-top: 1px solid var(--line); padding-top: 18px;
   }
 </style>
@@ -100,37 +156,70 @@
 <body>
 
 <div class="app">
-  <div class="kicker">Live · Real SEC EDGAR data</div>
+  <div class="kicker"><span class="live-dot"></span>Live · Real SEC EDGAR data</div>
   <h1>Revenue Risk Check</h1>
-  <p class="sub">Type a real public company's stock ticker. This pulls that company's actual latest financial filings straight from the SEC, right now, and runs them through a model trained on 500+ real company-years of filing data.</p>
+  <p class="sub">Type a real public company's ticker. This pulls that company's actual latest filings straight from the SEC right now, and scores them with a model trained on 505 real company-years of filing history.</p>
 
   <div class="input-row">
-    <input type="text" id="tickerInput" placeholder="e.g. AAPL, TSLA, IBM" maxlength="6" />
-    <button id="checkBtn">Check</button>
+    <input type="text" id="tickerInput" placeholder="e.g. AAPL, TSLA, IBM" maxlength="6" autocomplete="off" />
+    <button class="primary" id="checkBtn">Check</button>
   </div>
-  <p class="hint">Try any real ticker : this queries SEC's live API, not a cached lookup. Example: <code>MSFT</code></p>
+
+  <div class="chips" id="chipsRow">
+    <span class="chip" data-ticker="AAPL">AAPL</span>
+    <span class="chip" data-ticker="MSFT">MSFT</span>
+    <span class="chip" data-ticker="TSLA">TSLA</span>
+    <span class="chip" data-ticker="IBM">IBM</span>
+  </div>
 
   <div class="error-box" id="errorBox"></div>
-  <div class="loading" id="loadingBox"><span class="spinner"></span>Pulling live filings from SEC...</div>
+  <div class="loading" id="loadingBox"><span class="spinner"></span><span id="loadingText">Pulling live filings from SEC...</span></div>
 
   <div class="result" id="resultBox">
+    <div class="company-row">
+      <span class="company-name" id="companyName">—</span>
+      <span class="company-ticker" id="companyTicker">—</span>
+    </div>
+
     <div class="risk-card" id="riskCard">
       <div class="risk-label" id="riskLabel">RISK LEVEL</div>
       <div class="risk-pct" id="riskPct">--%</div>
-      <div class="risk-desc" id="riskDesc">predicted probability of a revenue decline next fiscal year</div>
+      <div class="risk-desc">predicted probability of a revenue decline next fiscal year</div>
+
+      <div class="sparkline-wrap">
+        <div class="sparkline-label">Revenue, last 5 filed years</div>
+        <svg class="sparkline" id="sparkline" viewBox="0 0 400 56" preserveAspectRatio="none"></svg>
+      </div>
+
+      <div class="factors">
+        <div class="factors-label">What's driving this</div>
+        <div class="factor-row">
+          <span class="factor-name">Revenue growth (YoY)</span>
+          <span class="factor-value-group"><span id="factGrowthVal">--</span><span class="flag" id="factGrowthFlag">--</span></span>
+        </div>
+        <div class="factor-row">
+          <span class="factor-name">Net margin</span>
+          <span class="factor-value-group"><span id="factMarginVal">--</span><span class="flag" id="factMarginFlag">--</span></span>
+        </div>
+        <div class="factor-row">
+          <span class="factor-name">Debt / assets</span>
+          <span class="factor-value-group"><span id="factDebtVal">--</span><span class="flag" id="factDebtFlag">--</span></span>
+        </div>
+      </div>
 
       <div class="financials">
         <div class="fin-row"><span class="fin-key">Fiscal Year</span><span id="finYear">--</span></div>
         <div class="fin-row"><span class="fin-key">Revenue</span><span id="finRevenue">--</span></div>
-        <div class="fin-row"><span class="fin-key">Revenue Growth (YoY)</span><span id="finGrowth">--</span></div>
-        <div class="fin-row"><span class="fin-key">Net Margin</span><span id="finMargin">--</span></div>
-        <div class="fin-row"><span class="fin-key">Debt / Assets</span><span id="finDebt">--</span></div>
+      </div>
+
+      <div class="actions">
+        <button class="ghost" id="copyBtn">Copy result</button>
       </div>
     </div>
   </div>
 
   <p class="disclaimer">
-    Model trained on 505 real company-years (2009–2025) using a time-based train/test split (0.62 ROC-AUC on held-out future years). This is a portfolio proof-of-concept, not investment advice, financial prediction from four ratios alone is a genuinely hard problem, and this model's honest job is to beat a naive baseline, not to forecast markets.
+    Model trained on 505 real company-years (2009–2025) using a time-based train/test split (0.62 ROC-AUC on held-out future years). Portfolio proof-of-concept, not investment advice; predicting revenue trajectory from four ratios alone is a genuinely hard problem, and this model's honest job is to beat a naive baseline, not forecast markets.
   </p>
 </div>
 
@@ -139,7 +228,73 @@
   const btn = document.getElementById('checkBtn');
   const errorBox = document.getElementById('errorBox');
   const loadingBox = document.getElementById('loadingBox');
+  const loadingText = document.getElementById('loadingText');
   const resultBox = document.getElementById('resultBox');
+  const chipsRow = document.getElementById('chipsRow');
+
+  const LOADING_MESSAGES = [
+    'Pulling live filings from SEC...',
+    'Resolving ticker to CIK...',
+    'Reading revenue, assets, liabilities...',
+    'Scoring against the trained model...'
+  ];
+
+  const RECENT_KEY = 'revenue_risk_recent_tickers';
+
+  function getRecent(){
+    try{ return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); }
+    catch(e){ return []; }
+  }
+  function addRecent(ticker){
+    try{
+      let recent = getRecent().filter(t => t !== ticker);
+      recent.unshift(ticker);
+      recent = recent.slice(0, 3);
+      localStorage.setItem(RECENT_KEY, JSON.stringify(recent));
+      renderChips();
+    } catch(e){ /* localStorage unavailable — fail silently, not critical */ }
+  }
+
+  function renderChips(){
+    const defaults = ['AAPL','MSFT','TSLA','IBM'];
+    const recent = getRecent();
+    chipsRow.innerHTML = '';
+    recent.forEach(t => {
+      const chip = document.createElement('span');
+      chip.className = 'chip recent';
+      chip.dataset.ticker = t;
+      chip.textContent = t;
+      chipsRow.appendChild(chip);
+    });
+    defaults.filter(t => !recent.includes(t)).slice(0, 4 - recent.length).forEach(t => {
+      const chip = document.createElement('span');
+      chip.className = 'chip';
+      chip.dataset.ticker = t;
+      chip.textContent = t;
+      chipsRow.appendChild(chip);
+    });
+  }
+  renderChips();
+
+  chipsRow.addEventListener('click', (e) => {
+    const chip = e.target.closest('.chip');
+    if(!chip) return;
+    input.value = chip.dataset.ticker;
+    checkTicker();
+  });
+
+  let loadingInterval;
+  function startLoadingMessages(){
+    let i = 0;
+    loadingText.textContent = LOADING_MESSAGES[0];
+    loadingInterval = setInterval(() => {
+      i = (i + 1) % LOADING_MESSAGES.length;
+      loadingText.textContent = LOADING_MESSAGES[i];
+    }, 900);
+  }
+  function stopLoadingMessages(){
+    clearInterval(loadingInterval);
+  }
 
   async function checkTicker(){
     const ticker = input.value.trim().toUpperCase();
@@ -147,7 +302,8 @@
 
     errorBox.style.display = 'none';
     resultBox.classList.remove('show');
-    loadingBox.style.display = 'flex';
+    loadingBox.classList.add('show');
+    startLoadingMessages();
     btn.disabled = true;
 
     try{
@@ -157,17 +313,16 @@
         body: JSON.stringify({ ticker })
       });
       const data = await res.json();
-
-      if(!res.ok){
-        throw new Error(data.error || 'Something went wrong');
-      }
+      if(!res.ok) throw new Error(data.error || 'Something went wrong');
 
       renderResult(data);
+      addRecent(ticker);
     } catch(err){
       errorBox.textContent = err.message || "Couldn't fetch that ticker's data. Try another one.";
       errorBox.style.display = 'block';
     } finally {
-      loadingBox.style.display = 'none';
+      stopLoadingMessages();
+      loadingBox.classList.remove('show');
       btn.disabled = false;
     }
   }
@@ -181,27 +336,81 @@
   }
   function fmtPct(val){
     if(val === null || val === undefined) return 'n/a';
-    return (val*100).toFixed(1) + '%';
+    return (val >= 0 ? '+' : '') + (val*100).toFixed(1) + '%';
+  }
+  function flagLabel(flag){
+    return { below_typical: 'below typical', above_typical: 'above typical', typical: 'typical', unknown: 'n/a' }[flag] || 'n/a';
+  }
+
+  function drawSparkline(history){
+    const svg = document.getElementById('sparkline');
+    if(!history || history.length < 2){
+      svg.innerHTML = '<text x="200" y="30" fill="#565E6D" font-size="11" text-anchor="middle" font-family="IBM Plex Mono, monospace">Not enough history on file</text>';
+      return;
+    }
+    const values = history.map(h => h.revenue);
+    const min = Math.min(...values), max = Math.max(...values);
+    const range = (max - min) || 1;
+    const w = 400, h = 56, pad = 6;
+    const points = values.map((v, i) => {
+      const x = pad + (i / (values.length - 1)) * (w - pad*2);
+      const y = h - pad - ((v - min) / range) * (h - pad*2);
+      return [x, y];
+    });
+    const pathD = points.map((p, i) => (i === 0 ? 'M' : 'L') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+    const lastPoint = points[points.length - 1];
+    const isUp = values[values.length-1] >= values[0];
+    const color = isUp ? '#33C97D' : '#FF5C4D';
+
+    svg.innerHTML = `
+      <path d="${pathD}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="${lastPoint[0]}" cy="${lastPoint[1]}" r="3.5" fill="${color}"/>
+    `;
   }
 
   function renderResult(data){
     const isHigh = data.prediction === 'high_risk';
+    const f = data.raw_financials;
+
+    document.getElementById('companyName').textContent = f.company_title || '—';
+    document.getElementById('companyTicker').textContent = data.ticker;
+
     const card = document.getElementById('riskCard');
     const label = document.getElementById('riskLabel');
-
     card.className = 'risk-card ' + (isHigh ? 'high' : 'low');
     label.className = 'risk-label ' + (isHigh ? 'high' : 'low');
-    label.textContent = isHigh ? 'Elevated Risk' : 'Low Risk';
+    label.textContent = isHigh ? '⚠ Elevated Risk' : '✓ Low Risk';
     document.getElementById('riskPct').textContent = (data.risk_probability*100).toFixed(1) + '%';
 
-    const f = data.raw_financials;
+    drawSparkline(f.revenue_history);
+
+    const ctx = f.context || {};
+    document.getElementById('factGrowthVal').textContent = fmtPct(f.revenue_growth_yoy);
+    document.getElementById('factGrowthFlag').textContent = flagLabel(ctx.revenue_growth_yoy);
+    document.getElementById('factGrowthFlag').className = 'flag ' + (ctx.revenue_growth_yoy || 'unknown');
+
+    document.getElementById('factMarginVal').textContent = fmtPct(f.net_margin);
+    document.getElementById('factMarginFlag').textContent = flagLabel(ctx.net_margin);
+    document.getElementById('factMarginFlag').className = 'flag ' + (ctx.net_margin || 'unknown');
+
+    document.getElementById('factDebtVal').textContent = f.debt_to_assets !== null ? f.debt_to_assets.toFixed(2) : 'n/a';
+    document.getElementById('factDebtFlag').textContent = flagLabel(ctx.debt_to_assets);
+    document.getElementById('factDebtFlag').className = 'flag ' + (ctx.debt_to_assets || 'unknown');
+
     document.getElementById('finYear').textContent = f.fiscal_year;
     document.getElementById('finRevenue').textContent = fmtMoney(f.revenue);
-    document.getElementById('finGrowth').textContent = fmtPct(f.revenue_growth_yoy);
-    document.getElementById('finMargin').textContent = fmtPct(f.net_margin);
-    document.getElementById('finDebt').textContent = f.debt_to_assets !== null ? f.debt_to_assets.toFixed(2) : 'n/a';
 
     resultBox.classList.add('show');
+
+    document.getElementById('copyBtn').onclick = () => {
+      const summary = `${f.company_title || data.ticker} (${data.ticker}) — ${isHigh ? 'Elevated' : 'Low'} revenue-decline risk: ${(data.risk_probability*100).toFixed(1)}%\nFY${f.fiscal_year} revenue: ${fmtMoney(f.revenue)} | Growth: ${fmtPct(f.revenue_growth_yoy)} | Margin: ${fmtPct(f.net_margin)}`;
+      navigator.clipboard?.writeText(summary).then(() => {
+        const btn = document.getElementById('copyBtn');
+        const original = btn.textContent;
+        btn.textContent = 'Copied ✓';
+        setTimeout(() => { btn.textContent = original; }, 1400);
+      });
+    };
   }
 
   btn.addEventListener('click', checkTicker);
