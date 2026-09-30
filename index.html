@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Live Revenue Risk Check — real SEC filings</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg: #0B0D10;
+    --surface: #14171B;
+    --ink: #EDEFF2;
+    --muted: #8A9099;
+    --line: #232830;
+    --accent: #3B82F6;
+    --risk-high: #E1523D;
+    --risk-high-bg: #2A1512;
+    --risk-low: #2FA86A;
+    --risk-low-bg: #10221A;
+  }
+  *{ box-sizing: border-box; }
+  body{
+    margin:0; background: var(--bg); color: var(--ink);
+    font-family: 'Inter', -apple-system, sans-serif; -webkit-font-smoothing: antialiased;
+    min-height: 100vh; display:flex; justify-content:center;
+    padding: 40px 16px 60px;
+  }
+  .app{ width:100%; max-width: 480px; }
+
+  .kicker{ font-family:'IBM Plex Mono', monospace; font-size: 12px; letter-spacing:.08em; text-transform:uppercase; color: var(--accent); margin-bottom: 10px; }
+  h1{ font-size: 26px; font-weight: 800; margin: 0 0 8px; line-height:1.2; }
+  .sub{ color: var(--muted); font-size: 14.5px; line-height:1.5; margin: 0 0 28px; max-width: 44ch; }
+
+  .input-row{ display:flex; gap: 10px; margin-bottom: 8px; }
+  input{
+    flex:1; padding: 14px 16px; border-radius: 10px; border: 1.5px solid var(--line);
+    background: var(--surface); color: var(--ink); font-family:'IBM Plex Mono', monospace;
+    font-size: 16px; letter-spacing: .04em; text-transform: uppercase;
+  }
+  input::placeholder{ color: var(--muted); text-transform:none; letter-spacing:0; }
+  input:focus, button:focus-visible{ outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  button{
+    padding: 14px 22px; border-radius: 10px; border: none; background: var(--accent);
+    color: #fff; font-weight: 700; font-size: 14.5px; cursor:pointer;
+    transition: opacity .15s;
+  }
+  button:hover{ opacity: .9; }
+  button:disabled{ opacity: .5; cursor: not-allowed; }
+
+  .hint{ font-size: 12.5px; color: var(--muted); margin: 0 0 32px; }
+  .hint code{ background: var(--surface); padding: 2px 6px; border-radius:4px; font-family:'IBM Plex Mono', monospace; }
+
+  .error-box{
+    padding: 14px 16px; border-radius: 10px; background: rgba(225,82,61,0.12);
+    color: var(--risk-high); font-size: 13.5px; display:none; margin-bottom: 20px;
+  }
+
+  .loading{ display:none; align-items:center; gap:10px; color: var(--muted); font-size: 14px; margin-bottom:20px; }
+  .spinner{
+    width:16px; height:16px; border: 2px solid var(--line); border-top-color: var(--accent);
+    border-radius:50%; animation: spin .7s linear infinite;
+  }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce){ .spinner{ animation: spin 1.4s linear infinite; } }
+
+  .result{ display:none; }
+  .result.show{ display:block; animation: fade .3s ease; }
+  @keyframes fade{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+
+  .risk-card{
+    border-radius: 14px; padding: 24px; margin-bottom: 20px; border: 1.5px solid var(--line);
+  }
+  .risk-card.high{ background: var(--risk-high-bg); border-color: rgba(225,82,61,0.4); }
+  .risk-card.low{ background: var(--risk-low-bg); border-color: rgba(47,168,106,0.4); }
+
+  .risk-label{ font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:.08em; text-transform:uppercase; margin-bottom:6px; }
+  .risk-label.high{ color: var(--risk-high); }
+  .risk-label.low{ color: var(--risk-low); }
+  .risk-pct{ font-size: 40px; font-weight: 800; line-height:1; margin-bottom:4px; }
+  .risk-desc{ color: var(--muted); font-size: 13.5px; }
+
+  .financials{ border-top: 1px solid var(--line); padding-top:16px; margin-top:16px; }
+  .fin-row{
+    display:flex; justify-content:space-between; padding: 6px 0;
+    font-family:'IBM Plex Mono', monospace; font-size: 13px;
+  }
+  .fin-key{ color: var(--muted); }
+
+  .disclaimer{
+    font-size: 12px; color: var(--muted); line-height:1.6; margin-top: 32px;
+    border-top: 1px solid var(--line); padding-top: 18px;
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="kicker">Live · Real SEC EDGAR data</div>
+  <h1>Revenue Risk Check</h1>
+  <p class="sub">Type a real public company's stock ticker. This pulls that company's actual latest financial filings straight from the SEC, right now, and runs them through a model trained on 500+ real company-years of filing data.</p>
+
+  <div class="input-row">
+    <input type="text" id="tickerInput" placeholder="e.g. AAPL, TSLA, IBM" maxlength="6" />
+    <button id="checkBtn">Check</button>
+  </div>
+  <p class="hint">Try any real ticker — this queries SEC's live API, not a cached lookup. Example: <code>MSFT</code></p>
+
+  <div class="error-box" id="errorBox"></div>
+  <div class="loading" id="loadingBox"><span class="spinner"></span>Pulling live filings from SEC...</div>
+
+  <div class="result" id="resultBox">
+    <div class="risk-card" id="riskCard">
+      <div class="risk-label" id="riskLabel">RISK LEVEL</div>
+      <div class="risk-pct" id="riskPct">--%</div>
+      <div class="risk-desc" id="riskDesc">predicted probability of a revenue decline next fiscal year</div>
+
+      <div class="financials">
+        <div class="fin-row"><span class="fin-key">Fiscal Year</span><span id="finYear">--</span></div>
+        <div class="fin-row"><span class="fin-key">Revenue</span><span id="finRevenue">--</span></div>
+        <div class="fin-row"><span class="fin-key">Revenue Growth (YoY)</span><span id="finGrowth">--</span></div>
+        <div class="fin-row"><span class="fin-key">Net Margin</span><span id="finMargin">--</span></div>
+        <div class="fin-row"><span class="fin-key">Debt / Assets</span><span id="finDebt">--</span></div>
+      </div>
+    </div>
+  </div>
+
+  <p class="disclaimer">
+    Model trained on 505 real company-years (2009–2025) using a time-based train/test split (0.62 ROC-AUC on held-out future years). This is a portfolio proof-of-concept, not investment advice, financial prediction from four ratios alone is a genuinely hard problem, and this model's honest job is to beat a naive baseline, not to forecast markets.
+  </p>
+</div>
+
+<script>
+  const input = document.getElementById('tickerInput');
+  const btn = document.getElementById('checkBtn');
+  const errorBox = document.getElementById('errorBox');
+  const loadingBox = document.getElementById('loadingBox');
+  const resultBox = document.getElementById('resultBox');
+
+  async function checkTicker(){
+    const ticker = input.value.trim().toUpperCase();
+    if(!ticker) return;
+
+    errorBox.style.display = 'none';
+    resultBox.classList.remove('show');
+    loadingBox.style.display = 'flex';
+    btn.disabled = true;
+
+    try{
+      const res = await fetch('/api/predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticker })
+      });
+      const data = await res.json();
+
+      if(!res.ok){
+        throw new Error(data.error || 'Something went wrong');
+      }
+
+      renderResult(data);
+    } catch(err){
+      errorBox.textContent = err.message || "Couldn't fetch that ticker's data. Try another one.";
+      errorBox.style.display = 'block';
+    } finally {
+      loadingBox.style.display = 'none';
+      btn.disabled = false;
+    }
+  }
+
+  function fmtMoney(val){
+    if(val === null || val === undefined) return 'n/a';
+    const abs = Math.abs(val);
+    if(abs >= 1e9) return '$' + (val/1e9).toFixed(2) + 'B';
+    if(abs >= 1e6) return '$' + (val/1e6).toFixed(1) + 'M';
+    return '$' + val.toLocaleString();
+  }
+  function fmtPct(val){
+    if(val === null || val === undefined) return 'n/a';
+    return (val*100).toFixed(1) + '%';
+  }
+
+  function renderResult(data){
+    const isHigh = data.prediction === 'high_risk';
+    const card = document.getElementById('riskCard');
+    const label = document.getElementById('riskLabel');
+
+    card.className = 'risk-card ' + (isHigh ? 'high' : 'low');
+    label.className = 'risk-label ' + (isHigh ? 'high' : 'low');
+    label.textContent = isHigh ? 'Elevated Risk' : 'Low Risk';
+    document.getElementById('riskPct').textContent = (data.risk_probability*100).toFixed(1) + '%';
+
+    const f = data.raw_financials;
+    document.getElementById('finYear').textContent = f.fiscal_year;
+    document.getElementById('finRevenue').textContent = fmtMoney(f.revenue);
+    document.getElementById('finGrowth').textContent = fmtPct(f.revenue_growth_yoy);
+    document.getElementById('finMargin').textContent = fmtPct(f.net_margin);
+    document.getElementById('finDebt').textContent = f.debt_to_assets !== null ? f.debt_to_assets.toFixed(2) : 'n/a';
+
+    resultBox.classList.add('show');
+  }
+
+  btn.addEventListener('click', checkTicker);
+  input.addEventListener('keydown', (e) => { if(e.key === 'Enter') checkTicker(); });
+</script>
+
+</body>
+</html>
