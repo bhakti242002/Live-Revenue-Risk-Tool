@@ -25,8 +25,9 @@ _bundle = joblib.load(_BUNDLE_PATH)
 MODEL = _bundle["model"]
 MEDIANS = _bundle["medians"]
 FEATURES = _bundle["features"]
+PERCENTILES = _bundle.get("percentiles", {})
 
-_cik_cache = {"map": None}
+_cik_cache = {"map": None, "titles": None}
 
 
 def _fetch_json(url):
@@ -39,7 +40,24 @@ def get_cik(ticker):
     if _cik_cache["map"] is None:
         data = _fetch_json("https://www.sec.gov/files/company_tickers.json")
         _cik_cache["map"] = {v["ticker"]: str(v["cik_str"]).zfill(10) for v in data.values()}
+        _cik_cache["titles"] = {v["ticker"]: v.get("title") for v in data.values()}
     return _cik_cache["map"].get(ticker.upper())
+
+
+def get_company_title(ticker):
+    return (_cik_cache.get("titles") or {}).get(ticker.upper())
+
+
+def contextualize(value, key):
+    """Compare a real value against the real training-set distribution."""
+    p = PERCENTILES.get(key)
+    if p is None or value is None:
+        return "unknown"
+    if value < p["p25"]:
+        return "below_typical"
+    if value > p["p75"]:
+        return "above_typical"
+    return "typical"
 
 
 def get_concept_facts(cik, concept):
@@ -85,6 +103,11 @@ def build_features_for_company(ticker):
     latest_fy = years[-1]
     prev_fy = years[-2] if len(years) > 1 else None
 
+    # Last 5 years of revenue history, for a real trend visual (not fabricated —
+    # whatever SEC actually has on file, gaps and all)
+    history_years = years[-5:]
+    revenue_history = [{"fy": fy, "revenue": revenues[fy]} for fy in history_years]
+
     rev_latest = revenues.get(latest_fy)
     rev_prev = revenues.get(prev_fy) if prev_fy else None
     assets = data.get("Assets", {}).get(latest_fy)
@@ -114,6 +137,13 @@ def build_features_for_company(ticker):
         "debt_to_assets": debt_to_assets,
         "net_margin": net_margin,
         "revenue_growth_yoy": revenue_growth_yoy,
+        "revenue_history": revenue_history,
+        "company_title": get_company_title(ticker),
+        "context": {
+            "net_margin": contextualize(net_margin, "net_margin"),
+            "debt_to_assets": contextualize(debt_to_assets, "debt_to_assets"),
+            "revenue_growth_yoy": contextualize(revenue_growth_yoy, "revenue_growth_yoy"),
+        },
     }
 
     return {"features": feature_row, "raw": raw_values}, None
